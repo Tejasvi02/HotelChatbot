@@ -4,8 +4,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -35,6 +38,11 @@ public class HotelRoom {
 	
 	@Transient
 	private Set<String> hotelRoomAmenityNames = new HashSet<>();
+	
+	@ManyToOne
+	@JoinColumn(name = "hotel_id")
+	@JsonIgnore
+	private Hotel hotel;
 	
 	public String getHotelName() {
 		return hotelName;

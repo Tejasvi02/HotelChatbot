@@ -38,5 +38,16 @@ public class SearchDetails {
 		this.noOfGuests = noOfGuests;
 	}
 	
+	@Override
+	public String toString() {
+	    return "SearchDetails{" +
+	            "searchHotel='" + searchHotel + '\'' +
+	            ", noOfRooms=" + noOfRooms +
+	            ", noOfGuests=" + noOfGuests +
+	            ", checkIn='" + checkIn + '\'' +
+	            ", checkOut='" + checkOut + '\'' +
+	            '}';
+	}
+
 	
 }

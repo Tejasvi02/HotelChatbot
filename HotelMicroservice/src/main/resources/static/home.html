@@ -57,7 +57,6 @@
 <div class="row">
     <!-- Sidebar Filters (disabled for now) -->
     <div class="col-2 border rounded" style="margin-left:50px;padding:25px;opacity:0.5;pointer-events:none;">
-        <!-- ... same sidebar filters as before ... -->
         <br>
         <strong>Star Rating:</strong><br>
         <div class="form-check-inline">
@@ -101,7 +100,6 @@
 </div>
 
 <script>
-    // Price range slider display (static)
     var slider = document.getElementById("priceRange");
     var output = document.getElementById("priceValue");
     if (slider) {
@@ -129,7 +127,6 @@
         $("#listHotel").html(hotelList);
     }
 
-    // Load all hotels on page load
     $(document).ready(function () {
         $.ajax({
             url: "/hotels/all",
@@ -143,38 +140,35 @@
         });
     });
 
-    // Search with all parameters
-    $("#searchBtn").click(function() {
-        var query = $("#searchLocation").val().trim();
-        var noRooms = $("#noRooms").val();
-        var noGuests = $("#noGuests").val();
-        var checkInDate = $("#checkInDate").val();
-        var checkOutDate = $("#checkOutDate").val();
+    // Modified Search with POST and JSON
+	$("#searchBtn").click(function() {
+	    var searchDetails = {
+	        searchHotel: $("#searchLocation").val().trim(),
+	        noOfRooms: parseInt($("#noRooms").val()) || 1,
+	        noOfGuests: parseInt($("#noGuests").val()) || 1,
+	        checkIn: $("#checkInDate").val(),
+	        checkOut: $("#checkOutDate").val()
+	    };
 
-        // Basic validation for search text (optional)
-        if(query === "") {
-            alert("Please enter a hotel, city or state to search.");
-            return;
-        }
+	    if (searchDetails.searchHotel === "") {
+	        alert("Please enter a hotel, city or state to search.");
+	        return;
+	    }
 
-        $.ajax({
-            url: "/hotels/search",
-            type: "GET",
-            data: {
-                query: query,
-                noRooms: noRooms,
-                noGuests: noGuests,
-                checkInDate: checkInDate,
-                checkOutDate: checkOutDate
-            },
-            success: function(hotels) {
-                renderHotels(hotels);
-            },
-            error: function() {
-                $("#listHotel").html("<p style='color:red;'>Error loading hotels.</p>");
-            }
-        });
-    });
+	    $.ajax({
+	        url: "/hotels/search",
+	        type: "POST",
+	        contentType: "application/json",
+	        data: JSON.stringify(searchDetails),
+	        success: function(hotels) {
+	            renderHotels(hotels);
+	        },
+	        error: function(xhr) {
+	            $("#listHotel").html("<p style='color:red;'>Error: " + xhr.responseText + "</p>");
+	        }
+	    });
+	});
+
 </script>
 
 </body>

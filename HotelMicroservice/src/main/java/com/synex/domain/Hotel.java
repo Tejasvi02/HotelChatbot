@@ -3,8 +3,10 @@ package com.synex.domain;
 import java.util.HashSet;
 import java.util.Set;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
@@ -32,7 +34,7 @@ public class Hotel {
 	private String imageURL;	
 	private int timesBooked;
 	
-	@OneToMany
+	@OneToMany(mappedBy = "hotel", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
 	private Set<HotelRoom> hotelRooms = new HashSet<>();
 	
 	@Transient
