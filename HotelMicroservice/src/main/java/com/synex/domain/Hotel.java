@@ -3,6 +3,7 @@ package com.synex.domain;
 import java.util.HashSet;
 import java.util.Set;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToMany;
@@ -15,6 +16,7 @@ import jakarta.persistence.Transient;
 public class Hotel {	
 	@Id
 	private int hotelId;
+	@Column(name = "hotel_name")
 	private String hotelName;
 	private String address;	
 	private String city;	

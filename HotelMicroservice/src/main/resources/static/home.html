@@ -29,27 +29,35 @@
     <h3>Narrow your search results</h3>
     <div class="form-row">
         <div class="col-3">
-            Hotel/City/State/Address <input class="form-control" type="text" id="searchLocation" name="searchLocation" disabled/>
+            Hotel/City/State/Address
+            <input class="form-control" type="text" id="searchLocation" name="searchLocation" placeholder="Enter hotel, city or state"/>
         </div>
         <div class="col-2">
-            No. Rooms: <input class="form-control" type="number" id="noRooms" name="noRooms" disabled/>
+            No. Rooms:
+            <input class="form-control" type="number" id="noRooms" name="noRooms" min="1" value="1"/>
         </div>
         <div class="col-2">
-            No. Guests: <input class="form-control" type="number" id="noGuests" name="noGuests" disabled/>
+            No. Guests:
+            <input class="form-control" type="number" id="noGuests" name="noGuests" min="1" value="1"/>
         </div>
         <div class="col">
-            Check-In Date: <input type="date" id="checkInDate" name="checkInDate" class="form-control" disabled/>
+            Check-In Date:
+            <input type="date" id="checkInDate" name="checkInDate" class="form-control"/>
         </div>
         <div class="col">
-            Check-Out Date: <input type="date" id="checkOutDate" name="checkOutDate" class="form-control" disabled/>
+            Check-Out Date:
+            <input type="date" id="checkOutDate" name="checkOutDate" class="form-control"/>
         </div>
-        <input class="btn-sm btn-primary" type="button" id="searchBtn" value="SEARCH" disabled/>
+        <div class="col-auto align-self-end">
+            <input class="btn-sm btn-primary" type="button" id="searchBtn" value="SEARCH"/>
+        </div>
     </div>
 </div>
 
 <div class="row">
-    <!-- Sidebar Filters -->
-    <div class="col-2 border rounded" style="margin-left:50px;padding:25px">
+    <!-- Sidebar Filters (disabled for now) -->
+    <div class="col-2 border rounded" style="margin-left:50px;padding:25px;opacity:0.5;pointer-events:none;">
+        <!-- ... same sidebar filters as before ... -->
         <br>
         <strong>Star Rating:</strong><br>
         <div class="form-check-inline">
@@ -92,39 +100,77 @@
     </div>
 </div>
 
-<!-- Disabled Modals -->
-<!-- All modals are left as-is but are not triggered -->
-<div class="modal" id="myModal"><div class="modal-dialog"><div class="modal-content"><!-- ... --></div></div></div>
-<div class="modal" id="hotelRoomsModal"><div class="modal-dialog modal-lg"><div class="modal-content"><!-- ... --></div></div></div>
-<div class="modal" id="bookingHotelRoomModal"><div class="modal-dialog modal-lg"><div class="modal-content"><!-- ... --></div></div></div>
-
 <script>
-    // Price range slider display (static for now)
+    // Price range slider display (static)
     var slider = document.getElementById("priceRange");
     var output = document.getElementById("priceValue");
-    output.innerHTML = slider ? slider.value : 500;
-</script>
+    if (slider) {
+        output.innerHTML = slider.value;
+        slider.oninput = function() {
+            output.innerHTML = this.value;
+        }
+    }
 
-<script>
-    // Only active functionality: Load and display all hotels
+    function renderHotels(hotels) {
+        if (!hotels || hotels.length === 0) {
+            $("#listHotel").html("<p>No hotels found.</p>");
+            return;
+        }
+        let hotelList = "";
+        hotels.forEach(hotel => {
+            hotelList += `
+                <div class='hotel-card'>
+                    <h4>${hotel.hotelName}</h4>
+                    <p>${hotel.address ? hotel.address + ", " : ""}${hotel.city}, ${hotel.state}</p>
+                    <p>⭐ ${hotel.starRating} Stars | 💰 $${hotel.averagePrice}</p>
+                    <p>${hotel.description || ""}</p>
+                </div>`;
+        });
+        $("#listHotel").html(hotelList);
+    }
+
+    // Load all hotels on page load
     $(document).ready(function () {
         $.ajax({
             url: "/hotels/all",
             type: "GET",
             success: function (hotels) {
-                let hotelList = "";
-                hotels.forEach(hotel => {
-                    hotelList += `
-                        <div class='hotel-card'>
-                            <h4>${hotel.hotelName}</h4>
-                            <p>${hotel.address}, ${hotel.city}, ${hotel.state}</p>
-                            <p>⭐ ${hotel.starRating} Stars | 💰 $${hotel.averagePrice}</p>
-                            <p>${hotel.description}</p>
-                        </div>`;
-                });
-                $("#listHotel").html(hotelList);
+                renderHotels(hotels);
             },
             error: function () {
+                $("#listHotel").html("<p style='color:red;'>Error loading hotels.</p>");
+            }
+        });
+    });
+
+    // Search with all parameters
+    $("#searchBtn").click(function() {
+        var query = $("#searchLocation").val().trim();
+        var noRooms = $("#noRooms").val();
+        var noGuests = $("#noGuests").val();
+        var checkInDate = $("#checkInDate").val();
+        var checkOutDate = $("#checkOutDate").val();
+
+        // Basic validation for search text (optional)
+        if(query === "") {
+            alert("Please enter a hotel, city or state to search.");
+            return;
+        }
+
+        $.ajax({
+            url: "/hotels/search",
+            type: "GET",
+            data: {
+                query: query,
+                noRooms: noRooms,
+                noGuests: noGuests,
+                checkInDate: checkInDate,
+                checkOutDate: checkOutDate
+            },
+            success: function(hotels) {
+                renderHotels(hotels);
+            },
+            error: function() {
                 $("#listHotel").html("<p style='color:red;'>Error loading hotels.</p>");
             }
         });
