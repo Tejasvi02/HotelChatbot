@@ -80,13 +80,14 @@
             <p>Price: $<span id="priceValue">500</span></p>
         </div>
 
-        <div class="form-check">
-            <input type="checkbox" class="amenity-filter" value="Parking">Parking<br>
-            <input type="checkbox" class="amenity-filter" value="Check-In & Check-Out Times">Check-In & Check-Out Times<br>
-            <input type="checkbox" class="amenity-filter" value="Breakfast">Breakfast<br>
-            <input type="checkbox" class="amenity-filter" value="Bar / Lounge">Bar / Lounge<br>
-            <input type="checkbox" class="amenity-filter" value="Fitness Center">Fitness Center
-        </div>
+		<div class="form-check">
+		    <input type="checkbox" class="amenity-filter" value="free wifi">Free WiFi<br>
+		    <input type="checkbox" class="amenity-filter" value="restaurant">Restaurant<br>
+		    <input type="checkbox" class="amenity-filter" value="swimming pool">Swimming Pool<br>
+		    <input type="checkbox" class="amenity-filter" value="parking">Parking<br>
+		    <input type="checkbox" class="amenity-filter" value="airport shuttle">Airport Shuttle<br>
+		    <!-- add others as needed -->
+		</div>
 
         <input style="margin-top:25px" class="btn btn-primary" type="button" id="filterBtn" value="FILTER"/>
     </div>
@@ -116,13 +117,12 @@
 
         let hotelList = "";
         hotels.forEach(hotel => {
-            const amenities = (hotel.amenities || []).join("|");
+			const amenities = (hotel.amenities || []).map(a => a.name.toLowerCase().trim()).join("|");
             hotelList += `
                 <div class='hotel-card'
                      data-stars='${hotel.starRating}'
                      data-price='${hotel.averagePrice}'
-                     data-amenities='${amenities}'>
-                     
+                     data-amenities='${amenities.toLowerCase()}'>
                     <h4>${hotel.hotelName}</h4>
                     <p>${hotel.address ? hotel.address + ", " : ""}${hotel.city}, ${hotel.state}</p>
                     <p>⭐ ${hotel.starRating} Stars | 💰 $${hotel.averagePrice}</p>
@@ -145,7 +145,6 @@
             }
         });
 
-        // === Frontend Filter Logic ===
         $("#filterBtn").click(function () {
             const selectedStars = $(".star-filter:checked").map((_, e) => +e.value).get();
             const maxPrice = +$("#priceRange").val();
@@ -156,10 +155,7 @@
                 const $card = $(this);
                 const stars = +$card.data("stars");
                 const price = +$card.data("price");
-                const amenities = ($card.data("amenities") || "")
-                    .split("|")
-                    .map(a => a.toLowerCase().trim())
-                    .filter(a => a);
+                const amenities = ($card.data("amenities") || "").split("|");
 
                 let visible = true;
 
@@ -174,7 +170,6 @@
         });
     });
 
-    // Search POST
     $("#searchBtn").click(function() {
         var searchDetails = {
             searchHotel: $("#searchLocation").val().trim(),
@@ -206,3 +201,4 @@
 
 </body>
 </html>
+
