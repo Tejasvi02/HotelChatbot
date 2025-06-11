@@ -99,6 +99,71 @@
     </div>
 </div>
 
+
+<div class="modal" id="hotelRoomsModal">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <h4 class="modal-title">Are these details correct?</h4>
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+      </div>
+
+      <!-- Modal body -->
+      <div class="modal-body" id="hotelRooms_modalBody">        
+              
+      </div>
+
+      <!-- Modal footer -->
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="bookingHotelRoomModal">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <h4 class="modal-title"></h4>
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+      </div>
+
+      <!-- Modal body -->
+      <div class="modal-body" id="bookingRoom_modalBody">        
+        	<div class="col">
+       			<div><input class="form-control" type="hidden" id="booking_hotelId"/></div>
+       			<div><input class="form-control" type="hidden" id="booking_hotelRoomId"/></div>
+	        	<div>Hotel Name: <input readonly="true" class="form-control" type="text" id="booking_hotelName"/></div>
+	        	<div>Customer Mobile: <input class="form-control" type="text" id="booking_customerMobile"/></div>
+       			<div id="noGuestsDiv">No. Guests: <input readonly="true" class="form-control" type="number" id="booking_noGuests"/></div>
+       			<div>No. Rooms: <input readonly="true" class="form-control" type="number" id="booking_noRooms"/></div>
+       			<div>Check-In Date: <input readonly="true" class="form-control" type="text" id="booking_checkInDate"/></div>
+       			<div>Check-Out Date: <input readonly="true" class="form-control" type="text" id="booking_checkOutDate"/></div>
+       			<div>Room Type: <input readonly="true" class="form-control" type="text" id="booking_roomType"/></div>
+       			<div>Discount: $<span id="booking_discount"></span></div>
+       			<div>Total Price: $<span id="booking_price"></span></div>       			
+       			<div style='margin-top:20px'>
+       				<button class='btn-confirm-booking btn btn-primary'>Confirm Booking</button>
+       				<button class='btn btn-primary'>Edit</button>
+       			</div>
+        	</div>          
+      </div>
+
+      <!-- Modal footer -->
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <script>
     var slider = document.getElementById("priceRange");
     var output = document.getElementById("priceValue");
@@ -118,16 +183,17 @@
         let hotelList = "";
         hotels.forEach(hotel => {
 			const amenities = (hotel.amenities || []).map(a => a.name.toLowerCase().trim()).join("|");
-            hotelList += `
-                <div class='hotel-card'
-                     data-stars='${hotel.starRating}'
-                     data-price='${hotel.averagePrice}'
-                     data-amenities='${amenities.toLowerCase()}'>
-                    <h4>${hotel.hotelName}</h4>
-                    <p>${hotel.address ? hotel.address + ", " : ""}${hotel.city}, ${hotel.state}</p>
-                    <p>⭐ ${hotel.starRating} Stars | 💰 $${hotel.averagePrice}</p>
-                    <p>${hotel.description || ""}</p>
-                </div>`;
+			hotelList += `
+			    <div class='hotel-card'
+			         data-stars='${hotel.starRating}'
+			         data-price='${hotel.averagePrice}'
+			         data-amenities='${(hotel.amenities || []).map(a => a.name.toLowerCase()).join("|")}'>
+			        <h4>${hotel.hotelName}</h4>
+			        <p>${hotel.address ? hotel.address + ", " : ""}${hotel.city}, ${hotel.state}</p>
+			        <p>⭐ ${hotel.starRating} Stars | 💰 $${hotel.averagePrice}</p>
+			        <p>${hotel.description || ""}</p>
+			        <button class="btn btn-sm btn-info view-rooms-btn" data-hotel='${JSON.stringify(hotel)}'>View Rooms</button>
+			    </div>`;
         });
 
         $("#listHotel").html(hotelList);
@@ -197,6 +263,69 @@
             }
         });
     });
+	// Show rooms modal
+	$(document).on("click", ".view-rooms-btn", function () {
+	    const hotel = JSON.parse($(this).attr("data-hotel"));
+	    const hotelRooms = hotel.hotelRooms || [];
+	    let roomHtml = "";
+
+	    hotelRooms.forEach(room => {
+	        roomHtml += `
+	            <div class='border rounded p-3 mb-3'>
+	                <h5>${room.type.name}</h5>
+	                <p>${room.description}</p>
+	                <p>Price: $${room.price} | Discount: ${room.discount}%</p>
+	                <button class='btn btn-primary btn-sm book-room-btn'
+	                        data-hotel-id='${hotel.hotelId}'
+	                        data-hotel-name='${hotel.hotelName}'
+	                        data-room-id='${room.hotelRoomId}'
+	                        data-room-type='${room.type.name}'
+	                        data-price='${room.price}'
+	                        data-discount='${room.discount}'>
+	                    Book This Room
+	                </button>
+	            </div>
+	        `;
+	    });
+
+	    $("#hotelRooms_modalBody").html(roomHtml);
+	    $("#hotelRoomsModal").modal("show");
+	});
+
+	// Book room button clicked
+	$(document).on("click", ".book-room-btn", function () {
+	    const hotelId = $(this).data("hotel-id");
+	    const roomId = $(this).data("room-id");
+	    const roomType = $(this).data("room-type");
+	    const price = $(this).data("price");
+	    const discount = $(this).data("discount");
+	    const hotelName = $(this).data("hotel-name");
+
+	    $("#booking_hotelId").val(hotelId);
+	    $("#booking_hotelRoomId").val(roomId);
+	    $("#booking_hotelName").val(hotelName);
+	    $("#booking_roomType").val(roomType);
+	    $("#booking_discount").text(discount);
+	    $("#booking_price").text(price - (price * discount / 100));
+
+	    // Fill booking details from search form
+	    $("#booking_noGuests").val($("#noGuests").val());
+	    $("#booking_noRooms").val($("#noRooms").val());
+	    $("#booking_checkInDate").val($("#checkInDate").val());
+	    $("#booking_checkOutDate").val($("#checkOutDate").val());
+
+	    // Hide current modal, show booking modal
+	    $("#hotelRoomsModal").modal("hide");
+	    $("#bookingHotelRoomModal").modal("show");
+	});
+
+	// Confirm Booking
+	$(document).on("click", ".btn-confirm-booking", function () {
+	    const bookingId = Math.floor(Math.random() * 90000) + 10000; // Dummy ID
+	    alert(`Booking Confirmed! Your booking ID is ${bookingId}.`);
+	    $("#bookingHotelRoomModal").modal("hide");
+	});
+
 </script>
 
 </body>
