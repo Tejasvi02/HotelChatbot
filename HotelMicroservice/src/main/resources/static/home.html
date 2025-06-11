@@ -55,41 +55,40 @@
 </div>
 
 <div class="row">
-    <!-- Sidebar Filters (disabled for now) -->
-    <div class="col-2 border rounded" style="margin-left:50px;padding:25px;opacity:0.5;pointer-events:none;">
-        <br>
+    <!-- Sidebar Filters -->
+    <div class="col-2 border rounded" style="margin-left:50px;padding:25px;">
         <strong>Star Rating:</strong><br>
         <div class="form-check-inline">
-            <input type="checkbox" class="form-check-input" value="1" disabled>1
+            <input type="checkbox" class="form-check-input star-filter" value="1">1
         </div>
         <div class="form-check-inline">
-            <input type="checkbox" class="form-check-input" value="2" disabled>2
+            <input type="checkbox" class="form-check-input star-filter" value="2">2
         </div>
         <div class="form-check-inline">
-            <input type="checkbox" class="form-check-input" value="3" disabled>3
+            <input type="checkbox" class="form-check-input star-filter" value="3">3
         </div>
         <div class="form-check-inline">
-            <input type="checkbox" class="form-check-input" value="4" disabled>4
+            <input type="checkbox" class="form-check-input star-filter" value="4">4
         </div>
         <div class="form-check-inline">
-            <input type="checkbox" class="form-check-input" value="5" disabled>5
+            <input type="checkbox" class="form-check-input star-filter" value="5">5
         </div><br><br>
 
         <strong>Range:</strong>
         <div class="slidecontainer">
-            <input type="range" min="1" max="500" value="500" class="slider" id="priceRange" disabled>
+            <input type="range" min="1" max="500" value="500" class="slider" id="priceRange">
             <p>Price: $<span id="priceValue">500</span></p>
         </div>
 
         <div class="form-check">
-            <input type="checkbox" class="form-check-input" disabled>Parking<br>
-            <input type="checkbox" class="form-check-input" disabled>Check-In & Check-Out Times<br>
-            <input type="checkbox" class="form-check-input" disabled>Breakfast<br>
-            <input type="checkbox" class="form-check-input" disabled>Bar / Lounge<br>
-            <input type="checkbox" class="form-check-input" disabled>Fitness Center
+            <input type="checkbox" class="amenity-filter" value="Parking">Parking<br>
+            <input type="checkbox" class="amenity-filter" value="Check-In & Check-Out Times">Check-In & Check-Out Times<br>
+            <input type="checkbox" class="amenity-filter" value="Breakfast">Breakfast<br>
+            <input type="checkbox" class="amenity-filter" value="Bar / Lounge">Bar / Lounge<br>
+            <input type="checkbox" class="amenity-filter" value="Fitness Center">Fitness Center
         </div>
 
-        <input style="margin-top:25px" class="btn btn-primary" type="button" id="filterBtn" value="FILTER" disabled/>
+        <input style="margin-top:25px" class="btn btn-primary" type="button" id="filterBtn" value="FILTER"/>
     </div>
 
     <!-- Hotel List -->
@@ -114,16 +113,23 @@
             $("#listHotel").html("<p>No hotels found.</p>");
             return;
         }
+
         let hotelList = "";
         hotels.forEach(hotel => {
+            const amenities = (hotel.amenities || []).join("|");
             hotelList += `
-                <div class='hotel-card'>
+                <div class='hotel-card'
+                     data-stars='${hotel.starRating}'
+                     data-price='${hotel.averagePrice}'
+                     data-amenities='${amenities}'>
+                     
                     <h4>${hotel.hotelName}</h4>
                     <p>${hotel.address ? hotel.address + ", " : ""}${hotel.city}, ${hotel.state}</p>
                     <p>⭐ ${hotel.starRating} Stars | 💰 $${hotel.averagePrice}</p>
                     <p>${hotel.description || ""}</p>
                 </div>`;
         });
+
         $("#listHotel").html(hotelList);
     }
 
@@ -138,37 +144,64 @@
                 $("#listHotel").html("<p style='color:red;'>Error loading hotels.</p>");
             }
         });
+
+        // === Frontend Filter Logic ===
+        $("#filterBtn").click(function () {
+            const selectedStars = $(".star-filter:checked").map((_, e) => +e.value).get();
+            const maxPrice = +$("#priceRange").val();
+            const selectedAmenities = $(".amenity-filter:checked").map((_, el) => el.value.toLowerCase().trim()).get();
+            const skipAmenityFilter = selectedAmenities.length === 0;
+
+            $(".hotel-card").each(function () {
+                const $card = $(this);
+                const stars = +$card.data("stars");
+                const price = +$card.data("price");
+                const amenities = ($card.data("amenities") || "")
+                    .split("|")
+                    .map(a => a.toLowerCase().trim())
+                    .filter(a => a);
+
+                let visible = true;
+
+                if (selectedStars.length && !selectedStars.includes(stars)) visible = false;
+                if (visible && price > maxPrice) visible = false;
+                if (visible && !skipAmenityFilter) {
+                    if (!selectedAmenities.every(a => amenities.includes(a))) visible = false;
+                }
+
+                $card.toggle(visible);
+            });
+        });
     });
 
-    // Modified Search with POST and JSON
-	$("#searchBtn").click(function() {
-	    var searchDetails = {
-	        searchHotel: $("#searchLocation").val().trim(),
-	        noOfRooms: parseInt($("#noRooms").val()) || 1,
-	        noOfGuests: parseInt($("#noGuests").val()) || 1,
-	        checkIn: $("#checkInDate").val(),
-	        checkOut: $("#checkOutDate").val()
-	    };
+    // Search POST
+    $("#searchBtn").click(function() {
+        var searchDetails = {
+            searchHotel: $("#searchLocation").val().trim(),
+            noOfRooms: parseInt($("#noRooms").val()) || 1,
+            noOfGuests: parseInt($("#noGuests").val()) || 1,
+            checkIn: $("#checkInDate").val(),
+            checkOut: $("#checkOutDate").val()
+        };
 
-	    if (searchDetails.searchHotel === "") {
-	        alert("Please enter a hotel, city or state to search.");
-	        return;
-	    }
+        if (searchDetails.searchHotel === "") {
+            alert("Please enter a hotel, city or state to search.");
+            return;
+        }
 
-	    $.ajax({
-	        url: "/hotels/search",
-	        type: "POST",
-	        contentType: "application/json",
-	        data: JSON.stringify(searchDetails),
-	        success: function(hotels) {
-	            renderHotels(hotels);
-	        },
-	        error: function(xhr) {
-	            $("#listHotel").html("<p style='color:red;'>Error: " + xhr.responseText + "</p>");
-	        }
-	    });
-	});
-
+        $.ajax({
+            url: "/hotels/search",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify(searchDetails),
+            success: function(hotels) {
+                renderHotels(hotels);
+            },
+            error: function(xhr) {
+                $("#listHotel").html("<p style='color:red;'>Error: " + xhr.responseText + "</p>");
+            }
+        });
+    });
 </script>
 
 </body>

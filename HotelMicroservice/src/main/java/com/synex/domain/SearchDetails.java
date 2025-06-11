@@ -6,6 +6,7 @@ public class SearchDetails {
 	private String checkOut;
 	private int noOfRooms;
 	private int noOfGuests;
+
 	
 	public String getSearchHotel() {
 		return searchHotel;
