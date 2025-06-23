@@ -63,7 +63,7 @@ public class HotelEmbeddingController {
     @PostMapping("/similar")
     public ResponseEntity<?> findSimilarHotels(@RequestBody Map<String, String> payload) {
         String query = payload.get("query");
-        return ResponseEntity.ok(embeddingService.findSimilarHotels(query));
+        return ResponseEntity.ok(embeddingService.findSimilarHotelIdsWithKeyword(query));
     }
 }
 
