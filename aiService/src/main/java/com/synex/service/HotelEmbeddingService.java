@@ -91,6 +91,7 @@ public class HotelEmbeddingService {
                      "FROM hotel_vectors ORDER BY distance ASC LIMIT 10";
 
         List<Map<String, Object>> results = jdbcTemplate.queryForList(sql, vectorStr);
+
         List<Integer> allHotelIds = results.stream()
             .map(result -> (Integer) result.get("hotel_id"))
             .collect(Collectors.toList());
