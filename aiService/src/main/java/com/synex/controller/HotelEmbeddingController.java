@@ -16,26 +16,6 @@ public class HotelEmbeddingController {
     private HotelEmbeddingService embeddingService;
 
     // 1. Save vector for a hotel
-//    @PostMapping("/embed")
-//    public ResponseEntity<String> embedHotel(@RequestBody Map<String, String> payload) {
-//        //int hotelId = Integer.parseInt(payload.get("hotel_id"));
-//    	Object hotelIdObj = payload.get("hotelId");
-//    	if (hotelIdObj == null) {
-//    	    return ResponseEntity.badRequest().body("Missing 'hotelId' in request body");
-//    	}
-//
-//    	int hotelId;
-//    	try {
-//    	    hotelId = Integer.parseInt(hotelIdObj.toString());
-//    	} catch (NumberFormatException e) {
-//    	    return ResponseEntity.badRequest().body("'hotelId' must be a valid integer");
-//    	}
-//
-//        String description = payload.get("description");
-//
-//        embeddingService.embedAndSaveHotel(hotelId, description);
-//        return ResponseEntity.ok("Hotel vector saved.");
-//    }
     @PostMapping("/embed")
     public ResponseEntity<String> embedHotel(@RequestBody Map<String, String> payload) {
     	System.out.println("This methos is being called in aiservice");
@@ -60,10 +40,24 @@ public class HotelEmbeddingController {
 
 
     // 2. Find similar hotels using embedding
+//    @PostMapping("/similar")
+//    public ResponseEntity<?> findSimilarHotels(@RequestBody Map<String, String> payload) {
+//        String query = payload.get("query");
+//        return ResponseEntity.ok(embeddingService.findSimilarHotelIdsWithKeyword(query));
+//    }
     @PostMapping("/similar")
     public ResponseEntity<?> findSimilarHotels(@RequestBody Map<String, String> payload) {
-        String query = payload.get("query");
+        String rawQuery = payload.get("query");
+        if (rawQuery == null || rawQuery.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Query is missing.");
+        }
+
+        // Remove all double quotes and trim spaces
+        String query = rawQuery.replace("\"", "").trim();
+
         return ResponseEntity.ok(embeddingService.findSimilarHotelIdsWithKeyword(query));
     }
+
+
 }
 

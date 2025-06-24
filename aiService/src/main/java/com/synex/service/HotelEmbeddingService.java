@@ -25,6 +25,7 @@ public class HotelEmbeddingService {
     public HotelEmbeddingService(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
+
     // 1. Get embedding from OpenAI
     private List<Double> getEmbedding(String inputText) {
         RestTemplate restTemplate = new RestTemplate();
@@ -72,19 +73,11 @@ public class HotelEmbeddingService {
         jdbcTemplate.update(sql, hotelId, vectorArray);
     }
 
-    // 3. Query similar hotels
-//    public List<Map<String, Object>> findSimilarHotels(String query) {
-//        List<Double> vector = getEmbedding(query);
-//        String vectorStr = formatVector(vector); // Format as "[0.1,0.2,...]"
-//
-//        String sql = "SELECT hotel_id, embedding <=> ?::vector AS distance " +
-//                     "FROM hotel_vectors " +
-//                     "ORDER BY distance ASC LIMIT 5";
-//
-//        return jdbcTemplate.queryForList(sql, vectorStr);
-//    }
+    // 3. Query similar hotels + filter by keyword
     public List<Integer> findSimilarHotelIdsWithKeyword(String query) {
         List<Double> vector = getEmbedding(query);
+        if (vector.isEmpty()) return Collections.emptyList();
+
         String vectorStr = formatVector(vector);
 
         String sql = "SELECT hotel_id, embedding <=> ?::vector AS distance " +
@@ -95,8 +88,12 @@ public class HotelEmbeddingService {
         List<Integer> allHotelIds = results.stream()
             .map(result -> (Integer) result.get("hotel_id"))
             .collect(Collectors.toList());
+        
+        System.out.println("Vector search result IDs: " + allHotelIds);
 
-        // Step 2: Call hotel microservice to filter based on actual keyword match
+        if (allHotelIds.isEmpty()) return Collections.emptyList();
+
+        // Step 2: Filter by actual keyword match via hotel microservice
         RestTemplate restTemplate = new RestTemplate();
         Map<String, Object> request = new HashMap<>();
         request.put("hotelIds", allHotelIds);
@@ -107,41 +104,33 @@ public class HotelEmbeddingService {
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
 
         ResponseEntity<List> response = restTemplate.postForEntity(
-            "http://localhost:8282/hotels/detailsByIdsAndKeyword", // Update to actual port/path
+            "http://localhost:8282/hotels/detailsByIdsAndKeyword",
             entity,
             List.class
         );
 
         List<Map<String, Object>> filteredHotels = response.getBody();
+        System.out.println("Filtered Hotels from /detailsByIdsAndKeyword: " + filteredHotels);
+        if (filteredHotels == null || filteredHotels.isEmpty()) return Collections.emptyList();
 
-        // Return just the filtered hotel IDs
         return filteredHotels.stream()
             .map(hotel -> (Integer) hotel.get("hotel_id"))
             .collect(Collectors.toList());
     }
 
-
-
-    
-//    private String formatVector(List<Double> vector) {
-//        return "[" + vector.stream()
-//                .map(String::valueOf)
-//                .collect(Collectors.joining(",")) + "]";
-//    }
     private String formatVector(List<Double> vector) {
         return "[" + vector.stream()
                 .map(String::valueOf)
                 .collect(Collectors.joining(",")) + "]";
     }
 
-    
- // Assume you have RestTemplate bean configured
+    // 4. Final hotel objects
     public List<Map<String, Object>> getFinalFilteredHotels(String query) {
+    	System.out.println("Embedding-based query: '" + query + "'");
         List<Integer> hotelIds = findSimilarHotelIdsWithKeyword(query);
 
         if (hotelIds.isEmpty()) return Collections.emptyList();
 
-        // Call hotel microservice
         String hotelServiceUrl = "http://localhost:8282/hotels/detailsByIdsAndKeyword";
 
         Map<String, Object> request = new HashMap<>();
@@ -152,10 +141,9 @@ public class HotelEmbeddingService {
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<Map<String, Object>> httpEntity = new HttpEntity<>(request, headers);
         RestTemplate restTemplate = new RestTemplate();
+
         ResponseEntity<List> response = restTemplate.postForEntity(hotelServiceUrl, httpEntity, List.class);
 
         return response.getBody();
     }
-
-
 }
