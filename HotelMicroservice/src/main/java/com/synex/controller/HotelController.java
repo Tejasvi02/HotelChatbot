@@ -1,6 +1,8 @@
 package com.synex.controller;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -86,55 +88,6 @@ public class HotelController {
     
     @Autowired
     private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
-//
-//    @PostMapping("/detailsByIdsAndKeyword")
-//    public ResponseEntity<?> getHotelDetailsByIdsAndKeyword(@RequestBody Map<String, Object> payload) {
-//        List<Integer> hotelIds = (List<Integer>) payload.get("hotelIds");
-//        String keyword = (String) payload.get("query");
-//        System.out.println("Filtering with query: '" + keyword + "'");
-//        System.out.println("Hotel IDs passed: " + hotelIds);
-//
-//        if (hotelIds == null || hotelIds.isEmpty() || keyword == null || keyword.trim().isEmpty()) {
-//            return ResponseEntity.badRequest().body("Missing hotelIds or query");
-//        }
-//        keyword = keyword.replace("\"", "").trim();
-//        // Tokenize and prepare LIKE conditions
-//        String[] tokens = keyword.toLowerCase().split("\\s+"); // e.g. ["seaside", "resort"]
-//        StringBuilder whereClause = new StringBuilder();
-//        Map<String, Object> params = new HashMap<>();
-//
-//        // Base condition for hotel ID filtering
-//        whereClause.append("hotel_id IN (:hotelIds) AND (");
-//
-//        for (int i = 0; i < tokens.length; i++) {
-//            String token = tokens[i];
-//            String paramName = "kw" + i;
-//            String likePattern = "%" + token + "%";
-//
-//            // For each field to match token
-//            if (i > 0) whereClause.append(" AND ");
-//            whereClause.append("(")
-//                .append("LOWER(hotel_name) LIKE :").append(paramName)
-//                .append(" OR LOWER(description) LIKE :").append(paramName)
-//                .append(" OR LOWER(state) LIKE :").append(paramName)
-//                .append(" OR LOWER(city) LIKE :").append(paramName)
-//                .append(" OR CAST(average_price AS TEXT) LIKE :").append(paramName)
-//                .append(")");
-//
-//            params.put(paramName, likePattern);
-//        }
-//
-//        whereClause.append(")");
-//
-//        String sql = "SELECT hotel_id, hotel_name, description, city, state, average_price, star_rating " +
-//                     "FROM hotels WHERE " + whereClause;
-//
-//        params.put("hotelIds", hotelIds);
-//
-//        List<Map<String, Object>> result = namedParameterJdbcTemplate.queryForList(sql, params);
-//
-//        return ResponseEntity.ok(result);
-//    }
     
     @PostMapping("/detailsByIdsAndKeyword")
     public ResponseEntity<?> getHotelDetailsByIdsAndKeyword(@RequestBody Map<String, Object> payload) {
@@ -145,50 +98,73 @@ public class HotelController {
             return ResponseEntity.badRequest().body("Missing hotelIds or query");
         }
 
-        keyword = keyword.replace("\"", "").trim();
-        String[] tokens = keyword.toLowerCase().split("\\s+");
+        keyword = keyword.replace("\"", "").toLowerCase().trim();
+        String[] tokens = keyword.split("\\s+");
+
+        Double maxPrice = null;
+
+        // Patterns to detect budget constraints
+        for (int i = 0; i < tokens.length; i++) {
+            String token = tokens[i];
+
+            try {
+                // If token is a number and previous token is a budget indicator
+                if (token.matches("\\d+")) {
+                    int price = Integer.parseInt(token);
+                    if (i > 0) {
+                        String prev = tokens[i - 1];
+                        if (prev.equals("under") || prev.equals("below") || prev.equals("less") || prev.equals("max") || prev.equals("budget")) {
+                            maxPrice = (double) price;
+                            break;
+                        }
+                    }
+                }
+            } catch (NumberFormatException e) {
+                // ignore
+            }
+        }
 
         StringBuilder whereClause = new StringBuilder();
         Map<String, Object> params = new HashMap<>();
-        whereClause.append(" h.hotel_id IN (:hotelIds) AND (");  // <-- FIXED: added leading space
+        whereClause.append(" h.hotel_id IN (:hotelIds) ");
 
-        boolean addedCondition = false;
-        for (int i = 0; i < tokens.length; i++) {
-            String token = tokens[i];
-            String paramName = "kw" + i;
-
-            if (token.matches("\\d+")) {
-                // Numeric token treated as budget
-                if (addedCondition) whereClause.append(" AND ");
-                whereClause.append("h.average_price <= :").append(paramName);
-                params.put(paramName, Double.parseDouble(token));
-            } else {
-                if (addedCondition) whereClause.append(" AND (");
-                else whereClause.append(" (");
-
-                whereClause.append("LOWER(h.hotel_name) LIKE :").append(paramName)
-                           .append(" OR LOWER(h.description) LIKE :").append(paramName)
-                           .append(" OR LOWER(h.state) LIKE :").append(paramName)
-                           .append(" OR LOWER(h.city) LIKE :").append(paramName)
-                           .append(" OR LOWER(a.name) LIKE :").append(paramName)
-                           .append(")");
-
-                params.put(paramName, "%" + token + "%");
-            }
-
-            addedCondition = true;
+        if (maxPrice != null) {
+            whereClause.append(" AND h.average_price <= :maxPrice ");
+            params.put("maxPrice", maxPrice);
         }
 
-        whereClause.append(")");  // closing last condition group
+        // Add textual keyword matching for tokens that are NOT budget words or numbers
+        List<String> keywordTokens = new ArrayList<>();
+        for (String t : tokens) {
+            if (!t.matches("\\d+") && !t.equals("under") && !t.equals("below") && !t.equals("less") && !t.equals("max") && !t.equals("budget")) {
+                keywordTokens.add(t);
+            }
+        }
 
-        // Final SQL query using LEFT JOIN to include amenities
+        if (!keywordTokens.isEmpty()) {
+            whereClause.append(" AND (");
+            for (int i = 0; i < keywordTokens.size(); i++) {
+                String paramName = "kw" + i;
+                if (i > 0) whereClause.append(" AND ");
+                whereClause.append("(")
+                    .append("LOWER(h.hotel_name) LIKE :").append(paramName)
+                    .append(" OR LOWER(h.description) LIKE :").append(paramName)
+                    .append(" OR LOWER(h.state) LIKE :").append(paramName)
+                    .append(" OR LOWER(h.city) LIKE :").append(paramName)
+                    .append(" OR LOWER(a.name) LIKE :").append(paramName)
+                    .append(")");
+                params.put(paramName, "%" + keywordTokens.get(i) + "%");
+            }
+            whereClause.append(") ");
+        }
+
         String sql = """
             SELECT DISTINCT h.hotel_id, h.hotel_name, h.description, h.city, h.state, 
                             h.average_price, h.star_rating
             FROM hotels h
             LEFT JOIN hotels_amenities ha ON h.hotel_id = ha.hotel_hotel_id
             LEFT JOIN amenities a ON ha.amenities_a_id = a.a_id
-            WHERE """ + whereClause.toString();  // safe now due to leading space
+            WHERE """ + whereClause.toString();
 
         params.put("hotelIds", hotelIds);
 
