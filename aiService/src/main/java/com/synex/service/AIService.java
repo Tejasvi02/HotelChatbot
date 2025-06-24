@@ -49,6 +49,6 @@ public class AIService {
         String lower = message.toLowerCase();
         return lower.contains("hotel") || lower.contains("resort") ||
                lower.contains("stay") || lower.contains("lodging") ||
-               lower.contains("book a place") || lower.contains("room");
+               lower.contains("book a place") || lower.contains("room") || lower.contains("hotels")|| lower.contains("rooms");
     }
 }

@@ -133,19 +133,26 @@ public class HotelController {
             params.put("maxPrice", maxPrice);
         }
 
-        // Add textual keyword matching for tokens that are NOT budget words or numbers
-        List<String> keywordTokens = new ArrayList<>();
-        for (String t : tokens) {
-            if (!t.matches("\\d+") && !t.equals("under") && !t.equals("below") && !t.equals("less") && !t.equals("max") && !t.equals("budget")) {
-                keywordTokens.add(t);
-            }
-        }
+        Set<String> stopwords = Set.of(
+        	    "is", "there", "any", "in", "at", "on", "the", "a", "an", "with", "for", "to",
+        	    "show", "me", "give", "i", "want", "looking", "of", "please", "can", "do", "you",
+        	    "hotel", "resort"  // optionally filter out generic nouns
+        	);
+
+        	List<String> keywordTokens = new ArrayList<>();
+        	for (String t : tokens) {
+        	    if (!t.matches("\\d+") &&
+        	        !stopwords.contains(t) &&
+        	        !t.equals("under") && !t.equals("below") && !t.equals("less") && !t.equals("max") && !t.equals("budget")) {
+        	        keywordTokens.add(t);
+        	    }
+        	}
 
         if (!keywordTokens.isEmpty()) {
             whereClause.append(" AND (");
             for (int i = 0; i < keywordTokens.size(); i++) {
                 String paramName = "kw" + i;
-                if (i > 0) whereClause.append(" AND ");
+                if (i > 0) whereClause.append(" OR ");
                 whereClause.append("(")
                     .append("LOWER(h.hotel_name) LIKE :").append(paramName)
                     .append(" OR LOWER(h.description) LIKE :").append(paramName)
