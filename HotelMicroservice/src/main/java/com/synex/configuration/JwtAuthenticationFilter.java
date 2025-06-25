@@ -18,41 +18,6 @@ import io.jsonwebtoken.security.Keys;
 import java.io.IOException;
 import java.util.List;
 
-
-//
-//public class JwtAuthenticationFilter extends OncePerRequestFilter {
-//
-//    @Override
-//    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
-//            throws ServletException, IOException {
-//
-//        String header = request.getHeader("Authorization");
-//        if (header != null && header.startsWith("Bearer ")) {
-//            String token = header.substring(7);
-//            try {
-//                Claims claims = Jwts.parserBuilder()
-//                        .setSigningKey(Keys.hmacShaKeyFor("mySecretKeymySecretKeymySecretKeymy".getBytes()))
-//                        .build()
-//                        .parseClaimsJws(token)
-//                        .getBody();
-//
-//                String username = claims.getSubject();
-//                if (username != null) {
-//                    UsernamePasswordAuthenticationToken auth =
-//                        new UsernamePasswordAuthenticationToken(username, null, List.of());
-//                    SecurityContextHolder.getContext().setAuthentication(auth);
-//                }
-//
-//            } catch (JwtException e) {
-//                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-//                return;
-//            }
-//        }
-//
-//        chain.doFilter(request, response);
-//    }
-//}
-
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String SECRET = "mySecretKeymySecretKeymySecretKeymy";
@@ -94,5 +59,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         chain.doFilter(request, response);
     }
+    
 }
 
