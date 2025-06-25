@@ -111,6 +111,15 @@ public class HotelRoom {
 	public void setPolicies(String policies) {
 		this.policies = policies;
 	}
+	public Hotel getHotel() {
+		return hotel;
+	}
+	public void setHotel(Hotel hotel) {
+		this.hotel = hotel;
+	}
+	public void setAmenities(Set<Amenities> amenities) {
+		this.amenities = amenities;
+	}
 	
 	
 }

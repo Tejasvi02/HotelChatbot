@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.Map;
 
 @RestController
@@ -60,6 +61,32 @@ public class HotelEmbeddingController {
 
         return ResponseEntity.ok(embeddingService.findSimilarHotelIdsWithKeyword(query, jwtToken));
     }
+    
+    @PostMapping("/similarfirst")
+    public ResponseEntity<?> findFirstSimilarHotel(
+            @RequestBody Map<String, String> payload,
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader) {
+
+        String rawQuery = payload.get("query");
+        if (rawQuery == null || rawQuery.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Query is missing.");
+        }
+
+        String query = rawQuery.replace("\"", "").trim();
+
+        String jwtToken = null;
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            jwtToken = authorizationHeader.substring(7);
+        }
+
+        Integer topHotelId = embeddingService.findTopSimilarHotelId(query);
+        if (topHotelId == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No hotel found.");
+        }
+
+        return ResponseEntity.ok(Collections.singletonMap("hotel_id", topHotelId));
+    }
+
 
 
 }

@@ -27,7 +27,7 @@ public class Booking {
     private LocalDate checkInDate;
     private LocalDate checkOutDate;
 
-    private String email;      // Guest's email
+    private String username;      // Guest's email
 
     private String status;     // BOOKED, CANCELLED
 
@@ -101,15 +101,15 @@ public class Booking {
         this.checkOutDate = checkOutDate;
     }
 
-    public String getEmail() {
-        return email;
-    }
+    public String getUsername() {
+		return username;
+	}
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
+	public void setUsername(String username) {
+		this.username = username;
+	}
 
-    public LocalDate getDateBooked() {
+	public LocalDate getDateBooked() {
         return dateBooked;
     }
 

@@ -152,4 +152,19 @@ public class HotelEmbeddingService {
 
         return response.getBody();
     }
+    
+    public Integer findTopSimilarHotelId(String query) {
+        List<Double> vector = getEmbedding(query);
+        if (vector.isEmpty()) return null;
+
+        String vectorStr = formatVector(vector);
+
+        String sql = "SELECT hotel_id FROM hotel_vectors " +
+                     "ORDER BY embedding <=> ?::vector ASC LIMIT 1";
+
+        List<Integer> result = jdbcTemplate.queryForList(sql, new Object[]{vectorStr}, Integer.class);
+
+        return result.isEmpty() ? null : result.get(0);
+    }
+
 }

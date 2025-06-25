@@ -34,7 +34,7 @@ public class SecurityConfig {
         http
             .csrf().disable()
             .authorizeHttpRequests()
-            .requestMatchers("/login", "/login.html", "/home.html", "/js/**", "/css/**", "/hotels/detailsByIdsAndKeyword").permitAll()
+            .requestMatchers("/login", "/login.html", "/home.html", "/js/**", "/css/**", "/hotels/detailsByIdsAndKeyword", "/bookings/create").permitAll()
             .anyRequest().authenticated()
             .and()
             .addFilterBefore(new JwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);

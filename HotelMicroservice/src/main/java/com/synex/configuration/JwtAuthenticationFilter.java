@@ -23,6 +23,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String SECRET = "mySecretKeymySecretKeymySecretKeymy";
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+        // skip JWT filter for these public endpoints
+        return path.equals("/bookings/create") ||
+               path.equals("/login") ||
+               path.equals("/login.html") ||
+               path.equals("/home.html") ||
+               path.startsWith("/js/") ||
+               path.startsWith("/css/") ||
+               path.equals("/hotels/detailsByIdsAndKeyword");
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
 
@@ -59,6 +72,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         chain.doFilter(request, response);
     }
+
+    
     
 }
 

@@ -11,20 +11,39 @@ public class AIService {
 
     @Autowired
     private HotelEmbeddingService hotelEmbeddingService;
+    
+    @Autowired
+    private BookingAIService bookingAIService;
 
-    public String getHotelResponseFromAI(String userMessage,  String jwtToken) {
-    	System.out.println("User query (raw): '" + userMessage + "'");
+
+    public String getHotelResponseFromAI(String userMessage, String jwtToken) {
+        System.out.println("User query (raw): '" + userMessage + "'");
+
         try {
+            if (!isHotelQuery(userMessage)) {
+                return "I'm not sure that's a hotel-related query.";
+            }
+
             List<Map<String, Object>> hotelData = hotelEmbeddingService.getFinalFilteredHotels(userMessage, jwtToken);
+            System.out.println("Filtered Hotels: " + hotelData);
+
             if (hotelData == null || hotelData.isEmpty()) {
                 return "Sorry, I couldn't find any hotels matching your query.";
             }
+
+            // 🔁 Use BookingAIService instead of custom method
+            if (bookingAIService.isBookingQuery(userMessage)) {
+                return bookingAIService.handleBookingRequest(userMessage, jwtToken);
+            }
+
             return formatHotelList(hotelData);
+
         } catch (Exception e) {
             e.printStackTrace();
-            return "Something went wrong fetching hotel data.";
+            return "Something went wrong while processing your request.";
         }
     }
+
 
     private String formatHotelList(List<Map<String, Object>> hotels) {
         StringBuilder reply = new StringBuilder("Here are some hotels I found:\n\n");
@@ -48,7 +67,8 @@ public class AIService {
     public boolean isHotelQuery(String message) {
         String lower = message.toLowerCase();
         return lower.contains("hotel") || lower.contains("resort") ||
-               lower.contains("stay") || lower.contains("lodging") ||
-               lower.contains("book a place") || lower.contains("room") || lower.contains("hotels")|| lower.contains("rooms");
+               lower.contains("stay") || lower.contains("lodging") || lower.contains("hotels");
     }
+    
+    
 }

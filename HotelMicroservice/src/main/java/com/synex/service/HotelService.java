@@ -96,5 +96,5 @@ public class HotelService {
                 return 1; // fallback
         }
     }
-
+    
 }
