@@ -74,7 +74,7 @@ public class HotelEmbeddingService {
     }
 
     // 3. Query similar hotels + filter by keyword
-    public List<Integer> findSimilarHotelIdsWithKeyword(String query) {
+    public List<Integer> findSimilarHotelIdsWithKeyword(String query, String jwtToken) {
         List<Double> vector = getEmbedding(query);
         if (vector.isEmpty()) return Collections.emptyList();
 
@@ -88,12 +88,9 @@ public class HotelEmbeddingService {
         List<Integer> allHotelIds = results.stream()
             .map(result -> (Integer) result.get("hotel_id"))
             .collect(Collectors.toList());
-        
-        System.out.println("Vector search result IDs: " + allHotelIds);
 
         if (allHotelIds.isEmpty()) return Collections.emptyList();
 
-        // Step 2: Filter by actual keyword match via hotel microservice
         RestTemplate restTemplate = new RestTemplate();
         Map<String, Object> request = new HashMap<>();
         request.put("hotelIds", allHotelIds);
@@ -101,6 +98,11 @@ public class HotelEmbeddingService {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+
+        if (jwtToken != null) {
+            headers.setBearerAuth(jwtToken);
+        }
+
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
 
         ResponseEntity<List> response = restTemplate.postForEntity(
@@ -110,7 +112,6 @@ public class HotelEmbeddingService {
         );
 
         List<Map<String, Object>> filteredHotels = response.getBody();
-        System.out.println("Filtered Hotels from /detailsByIdsAndKeyword: " + filteredHotels);
         if (filteredHotels == null || filteredHotels.isEmpty()) return Collections.emptyList();
 
         return filteredHotels.stream()
@@ -125,9 +126,9 @@ public class HotelEmbeddingService {
     }
 
     // 4. Final hotel objects
-    public List<Map<String, Object>> getFinalFilteredHotels(String query) {
+    public List<Map<String, Object>> getFinalFilteredHotels(String query, String jwtToken) {
     	System.out.println("Embedding-based query: '" + query + "'");
-        List<Integer> hotelIds = findSimilarHotelIdsWithKeyword(query);
+        List<Integer> hotelIds = findSimilarHotelIdsWithKeyword(query, jwtToken);
 
         if (hotelIds.isEmpty()) return Collections.emptyList();
 
@@ -137,8 +138,13 @@ public class HotelEmbeddingService {
         request.put("hotelIds", hotelIds);
         request.put("query", query);
 
+        //String token = extractTokenFromIncomingRequest();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+        if (jwtToken != null) {
+        	System.out.println(jwtToken);
+            headers.setBearerAuth(jwtToken); // Automatically adds "Bearer " prefix
+        }
         HttpEntity<Map<String, Object>> httpEntity = new HttpEntity<>(request, headers);
         RestTemplate restTemplate = new RestTemplate();
 

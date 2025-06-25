@@ -30,11 +30,24 @@
     </style>
 </head>
 <body>
+	<nav style="display: flex; justify-content: space-between; padding: 10px; background-color: #eee;">
+	    <span>Welcome to Home</span>
+	    <button onclick="logout()" style="margin-left: auto;">Logout</button>
+	</nav>
 
-<div class="container" style="margin-left:100px">
-    <h1>Welcome to Travel Gig</h1>
-    <h2>Search your desired hotel</h2>
-</div>
+	<script>
+		const token = localStorage.getItem("jwt");
+	    // Check if JWT token exists, otherwise redirect to login
+	    if (!localStorage.getItem("jwt")) {
+	        window.location.href = "login.html";
+	    }
+
+	    // Logout function: remove JWT and redirect to login page
+	    function logout() {
+	        localStorage.removeItem('jwt');
+	        window.location.href = 'login.html';
+	    }
+	</script>
 
 <!-- Search Bar Section -->
 <div class="container border rounded" style="margin:auto;padding:50px;margin-top:50px;margin-bottom:50px">
@@ -200,7 +213,6 @@
         </div>
     </div>
 </div>
-
 <script>
     var slider = document.getElementById("priceRange");
     var output = document.getElementById("priceValue");
@@ -237,16 +249,19 @@
     }
 
     $(document).ready(function () {
-        $.ajax({
-            url: "/hotels/all",
-            type: "GET",
-            success: function (hotels) {
-                renderHotels(hotels);
-            },
-            error: function () {
-                $("#listHotel").html("<p style='color:red;'>Error loading hotels.</p>");
-            }
-        });
+		$.ajax({
+		    url: "/hotels/all",
+		    type: "GET",
+		    headers: {
+		        "Authorization": "Bearer " + localStorage.getItem("jwt")
+		    },
+		    success: function (hotels) {
+		        renderHotels(hotels);
+		    },
+		    error: function () {
+		        $("#listHotel").html("<p style='color:red;'>Error loading hotels.</p>");
+		    }
+		});
 
         $("#filterBtn").click(function () {
             const selectedStars = $(".star-filter:checked").map((_, e) => +e.value).get();
@@ -287,18 +302,21 @@
             return;
         }
 
-        $.ajax({
-            url: "/hotels/search",
-            type: "POST",
-            contentType: "application/json",
-            data: JSON.stringify(searchDetails),
-            success: function(hotels) {
-                renderHotels(hotels);
-            },
-            error: function(xhr) {
-                $("#listHotel").html("<p style='color:red;'>Error: " + xhr.responseText + "</p>");
-            }
-        });
+		$.ajax({
+		    url: "/hotels/search",
+		    type: "POST",
+		    contentType: "application/json",
+		    headers: {
+		        "Authorization": "Bearer " + localStorage.getItem("jwt")
+		    },
+		    data: JSON.stringify(searchDetails),
+		    success: function(hotels) {
+		        renderHotels(hotels);
+		    },
+		    error: function(xhr) {
+		        $("#listHotel").html("<p style='color:red;'>Error: " + xhr.responseText + "</p>");
+		    }
+		});
     });
 	// Show rooms modal
 	$(document).on("click", ".view-rooms-btn", function () {
@@ -371,13 +389,14 @@
 	    $("#chatInput").val(""); // Clear input
 
 	    // Send to backend
-	    fetch("http://localhost:8282/bot/ask", {
-	        method: "POST",
-	        headers: {
-	            "Content-Type": "application/json"
-	        },
-	        body: JSON.stringify(userInput)
-	    })
+		fetch("http://localhost:8282/bot/ask", {
+		    method: "POST",
+		    headers: {
+		        "Content-Type": "application/json",
+		        "Authorization": "Bearer " + localStorage.getItem("jwt")
+		    },
+		    body: JSON.stringify(userInput)
+		})
 	    .then(response => response.text())
 	    .then(botReply => {
 	        $("#chatMessages").append(`<div class='text-left text-dark mb-2'><strong>Bot:</strong> ${botReply}</div>`);

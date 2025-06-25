@@ -40,22 +40,25 @@ public class HotelEmbeddingController {
 
 
     // 2. Find similar hotels using embedding
-//    @PostMapping("/similar")
-//    public ResponseEntity<?> findSimilarHotels(@RequestBody Map<String, String> payload) {
-//        String query = payload.get("query");
-//        return ResponseEntity.ok(embeddingService.findSimilarHotelIdsWithKeyword(query));
-//    }
+
     @PostMapping("/similar")
-    public ResponseEntity<?> findSimilarHotels(@RequestBody Map<String, String> payload) {
+    public ResponseEntity<?> findSimilarHotels(
+            @RequestBody Map<String, String> payload,
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader) {
+        
         String rawQuery = payload.get("query");
         if (rawQuery == null || rawQuery.trim().isEmpty()) {
             return ResponseEntity.badRequest().body("Query is missing.");
         }
 
-        // Remove all double quotes and trim spaces
         String query = rawQuery.replace("\"", "").trim();
 
-        return ResponseEntity.ok(embeddingService.findSimilarHotelIdsWithKeyword(query));
+        String jwtToken = null;
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            jwtToken = authorizationHeader.substring(7);
+        }
+
+        return ResponseEntity.ok(embeddingService.findSimilarHotelIdsWithKeyword(query, jwtToken));
     }
 
 

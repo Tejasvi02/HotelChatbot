@@ -12,10 +12,10 @@ public class AIService {
     @Autowired
     private HotelEmbeddingService hotelEmbeddingService;
 
-    public String getHotelResponseFromAI(String userMessage) {
+    public String getHotelResponseFromAI(String userMessage,  String jwtToken) {
     	System.out.println("User query (raw): '" + userMessage + "'");
         try {
-            List<Map<String, Object>> hotelData = hotelEmbeddingService.getFinalFilteredHotels(userMessage);
+            List<Map<String, Object>> hotelData = hotelEmbeddingService.getFinalFilteredHotels(userMessage, jwtToken);
             if (hotelData == null || hotelData.isEmpty()) {
                 return "Sorry, I couldn't find any hotels matching your query.";
             }
