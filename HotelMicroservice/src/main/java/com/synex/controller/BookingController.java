@@ -2,8 +2,10 @@ package com.synex.controller;
 
 import com.synex.domain.Booking;
 import com.synex.domain.Hotel;
+import com.synex.domain.HotelRoom;
 import com.synex.repository.BookingRepository;
 import com.synex.repository.HotelRepository;
+import com.synex.repository.HotelRoomRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +23,9 @@ public class BookingController {
 
     @Autowired
     private BookingRepository bookingRepository;
+    
+    @Autowired
+    private HotelRoomRepository hotelRoomRepository;
 
     @PostMapping("/create")
     public ResponseEntity<?> createBooking(@RequestBody BookingRequest request) {
@@ -41,8 +46,18 @@ public class BookingController {
             return ResponseEntity.badRequest().body("Hotel not found: " + request.getHotelName());
         }
 
+       
+        int fixedHotelRoomId = 1;
+
+        Optional<HotelRoom> roomOpt = hotelRoomRepository.findById(fixedHotelRoomId);
+        if (!roomOpt.isPresent()) {
+            return ResponseEntity.badRequest().body("Hotel room not found: ID " + fixedHotelRoomId);
+        }
+        HotelRoom room = roomOpt.get();
+
         Booking booking = new Booking();
         booking.setHotel(hotel);
+        booking.setHotelRoom(room);
         booking.setNumRooms(request.getNumRooms());
         booking.setNumGuests(request.getNumGuests());
         booking.setCheckInDate(LocalDate.parse(request.getCheckInDate()));
@@ -57,6 +72,7 @@ public class BookingController {
         return ResponseEntity.ok("Booking successful! for hotel "+ hotel.getHotelName()+" with ID: " + booking.getBookingId()+
         		" for dates from "+booking.getCheckInDate()+" to "+ booking.getCheckOutDate());
     }
+
 
     // DTO for booking request in Hotel microservice (matches AI service DTO)
     public static class BookingRequest {

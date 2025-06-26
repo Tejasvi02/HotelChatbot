@@ -18,7 +18,7 @@ public class BookingAIService {
     private final Map<String, BookingSession> activeSessions = new HashMap<>();
 
     private enum Step {
-        HOTEL_NAME, NUM_ROOMS, NUM_GUESTS, CHECKIN_DATE, CHECKOUT_DATE, CONFIRM
+        HOTEL_NAME, ROOM_TYPE, NUM_ROOMS, NUM_GUESTS, CHECKIN_DATE, CHECKOUT_DATE, CONFIRM
     }
 
     private static class BookingSession {
@@ -87,12 +87,23 @@ public class BookingAIService {
                 case HOTEL_NAME:
                     session.bookingRequest.setHotelName(userInput);
                     session.currentStep = Step.NUM_ROOMS;
-                    return "How many rooms would you like to book?";
+                    return "How many rooms do you need?";
 
                 case NUM_ROOMS:
                     session.bookingRequest.setNumRooms(Integer.parseInt(userInput.trim()));
-                    session.currentStep = Step.NUM_GUESTS;
-                    return "How many guests in total?";
+                    session.currentStep = Step.ROOM_TYPE;
+                    return "Please reply with 'Deluxe' or 'Standard' to choose your room type.";
+
+                case ROOM_TYPE:
+                    String inputLower = userInput.trim().toLowerCase();
+                    if (inputLower.equals("deluxe") || inputLower.equals("standard")) {
+                        session.bookingRequest.setRoomType(
+                            inputLower.substring(0, 1).toUpperCase() + inputLower.substring(1));
+                        session.currentStep = Step.NUM_GUESTS;
+                        return "How many guests in total?";
+                    } else {
+                        return "Please reply with 'Deluxe' or 'Standard' to choose your room type.";
+                    }
 
                 case NUM_GUESTS:
                     session.bookingRequest.setNumGuests(Integer.parseInt(userInput.trim()));
@@ -132,20 +143,29 @@ public class BookingAIService {
         return "Unexpected error. Please try again.";
     }
 
-
-
     private String processBookingStep(BookingSession session, String userInput, String userKey, String jwtToken) {
         try {
             switch (session.currentStep) {
                 case HOTEL_NAME:
                     session.bookingRequest.setHotelName(userInput);
                     session.currentStep = Step.NUM_ROOMS;
-                    return "How many rooms would you like to book?";
+                    return "How many rooms do you need?";
 
                 case NUM_ROOMS:
                     session.bookingRequest.setNumRooms(Integer.parseInt(userInput.trim()));
-                    session.currentStep = Step.NUM_GUESTS;
-                    return "How many guests in total?";
+                    session.currentStep = Step.ROOM_TYPE;
+                    return "Please reply with 'Deluxe' or 'Standard' to choose your room type.";
+
+                case ROOM_TYPE:
+                    String inputLower = userInput.trim().toLowerCase();
+                    if (inputLower.equals("deluxe") || inputLower.equals("standard")) {
+                        session.bookingRequest.setRoomType(
+                            inputLower.substring(0, 1).toUpperCase() + inputLower.substring(1));
+                        session.currentStep = Step.NUM_GUESTS;
+                        return "How many guests in total?";
+                    } else {
+                        return "Please reply with 'Deluxe' or 'Standard' to choose your room type.";
+                    }
 
                 case NUM_GUESTS:
                     session.bookingRequest.setNumGuests(Integer.parseInt(userInput.trim()));
@@ -295,6 +315,7 @@ public class BookingAIService {
         private String checkInDate;
         private String checkOutDate;
         private String username;
+        private String roomType;
 
         public int getHotelId() { return hotelId; }
         public void setHotelId(int hotelId) { this.hotelId = hotelId; }
@@ -316,5 +337,8 @@ public class BookingAIService {
 
         public String getUsername() { return username; }
         public void setUsername(String username) { this.username = username; }
+        
+        public String getRoomType() { return roomType; }
+        public void setRoomType(String roomType) { this.roomType = roomType; }
     }
 }

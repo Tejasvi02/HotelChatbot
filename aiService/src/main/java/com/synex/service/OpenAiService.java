@@ -19,45 +19,38 @@ public class OpenAiService {
     @Value("${openai.api.key}")
     private String openAiApiKey;
 
-    public String askOpenAi(String userInput) {
+    public String askOpenAi(String englishInput) {
         RestTemplate restTemplate = new RestTemplate();
         ObjectMapper mapper = new ObjectMapper();
 
-        // Build JSON payload safely
         ObjectNode payload = mapper.createObjectNode();
         payload.put("model", "gpt-4o-mini");
 
         ArrayNode messages = mapper.createArrayNode();
 
+        // System prompt (you can customize it)
         ObjectNode systemMessage = mapper.createObjectNode();
         systemMessage.put("role", "system");
         systemMessage.put("content", "You are a helpful assistant.");
 
+        // User message with the English input
         ObjectNode userMessage = mapper.createObjectNode();
         userMessage.put("role", "user");
-        userMessage.put("content", userInput);
+        userMessage.put("content", englishInput);
 
         messages.add(systemMessage);
         messages.add(userMessage);
 
         payload.set("messages", messages);
 
-        // Setup headers
         HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(openAiApiKey);
+        headers.setBearerAuth(openAiApiKey);  // your API key
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        // Create request
-        HttpEntity<String> request;
         try {
             String jsonPayload = mapper.writeValueAsString(payload);
-            request = new HttpEntity<>(jsonPayload, headers);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "Failed to build request.";
-        }
+            HttpEntity<String> request = new HttpEntity<>(jsonPayload, headers);
 
-        try {
             ResponseEntity<String> response = restTemplate.postForEntity(
                 "https://api.openai.com/v1/chat/completions",
                 request,
@@ -69,7 +62,59 @@ public class OpenAiService {
 
         } catch (Exception e) {
             e.printStackTrace();
-            return "Error talking to OpenAI API.";
+            return "Sorry, I am unable to process your request right now.";
         }
     }
+
+
+    
+    public String translateIfNeeded(String text, String userLang) {
+        if ("en".equalsIgnoreCase(userLang)) {
+            return text;  // no translation needed
+        }
+        // Call OpenAI API with prompt to translate to English only (no other logic)
+        RestTemplate restTemplate = new RestTemplate();
+        ObjectMapper mapper = new ObjectMapper();
+
+        ObjectNode payload = mapper.createObjectNode();
+        payload.put("model", "gpt-4o-mini");
+
+        ArrayNode messages = mapper.createArrayNode();
+
+        ObjectNode systemMessage = mapper.createObjectNode();
+        systemMessage.put("role", "system");
+        systemMessage.put("content", "You are a helpful assistant. Translate the user's message to English only.");
+
+        ObjectNode userMessage = mapper.createObjectNode();
+        userMessage.put("role", "user");
+        userMessage.put("content", text);
+
+        messages.add(systemMessage);
+        messages.add(userMessage);
+
+        payload.set("messages", messages);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(openAiApiKey);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        try {
+            String jsonPayload = mapper.writeValueAsString(payload);
+            HttpEntity<String> request = new HttpEntity<>(jsonPayload, headers);
+
+            ResponseEntity<String> response = restTemplate.postForEntity(
+                "https://api.openai.com/v1/chat/completions",
+                request,
+                String.class
+            );
+
+            JsonNode root = mapper.readTree(response.getBody());
+            return root.path("choices").get(0).path("message").path("content").asText();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return text;  // fallback: return original if translation fails
+        }
+    }
+
 }

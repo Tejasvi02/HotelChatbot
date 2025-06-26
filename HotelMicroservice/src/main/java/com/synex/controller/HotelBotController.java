@@ -6,6 +6,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
@@ -15,21 +16,27 @@ import org.springframework.web.client.RestTemplate;
 @RequestMapping("/bot")
 public class HotelBotController {
 
-    @PostMapping("/ask")
-    public ResponseEntity<String> askBot(@RequestBody String userMessage) {
-        RestTemplate restTemplate = new RestTemplate();
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<String> request = new HttpEntity<>(userMessage, headers);
+	@PostMapping("/ask")
+	public ResponseEntity<String> askBot(@RequestBody String userMessage, @RequestHeader(value = "X-Language", required = false) String language) {
+	    RestTemplate restTemplate = new RestTemplate();
+	    HttpHeaders headers = new HttpHeaders();
+	    headers.setContentType(MediaType.APPLICATION_JSON);
 
-        ResponseEntity<String> response = restTemplate.postForEntity(
-            "http://localhost:8383/ai/chat",
-            request,
-            String.class
-        );
+	    if (language != null && !language.isEmpty()) {
+	        headers.set("X-Language", language);
+	    }
 
-        return ResponseEntity.ok(response.getBody());
-    }
+	    HttpEntity<String> request = new HttpEntity<>(userMessage, headers);
+
+	    ResponseEntity<String> response = restTemplate.postForEntity(
+	        "http://localhost:8383/ai/chat",
+	        request,
+	        String.class
+	    );
+
+	    return ResponseEntity.ok(response.getBody());
+	}
+
 
 }
 
