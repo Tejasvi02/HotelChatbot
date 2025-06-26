@@ -1,5 +1,7 @@
 package com.synex.controller;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,26 +27,50 @@ public class AIController {
     
     @Autowired
     private BookingAIService bookingAIService;
+    
+    public static List<String> questions;
+
+//    @PostMapping("/chat")
+//    public ResponseEntity<?> chatWithBot(@RequestBody String userInput, HttpServletRequest request) {
+//        String jwtToken = extractJwt(request);
+//        
+//        if (bookingAIService.isBookingQuery(userInput)) {
+//            String bookingResult = bookingAIService.handleBookingRequest(userInput, jwtToken);
+//            return ResponseEntity.ok(bookingResult);
+//        } else if (aiService.isHotelQuery(userInput)) {
+//            String hotelDetails = aiService.getHotelResponseFromAI(userInput, jwtToken);
+//            return ResponseEntity.ok(hotelDetails + "<br>To <b>BOOK</b> any of these please type book followed by the hotel name");
+//        } else {
+//            return ResponseEntity.ok(openAiService.askOpenAi(userInput));
+//        }
+//    }
+    private String extractSessionId(HttpServletRequest request) {
+        String sessionId = request.getHeader("X-Session-Id");
+        if (sessionId == null || sessionId.isEmpty()) {
+            // fallback or generate new session ID (optional)
+            sessionId = "default-session-id"; // or UUID.randomUUID().toString();
+        }
+        return sessionId;
+    }
 
     @PostMapping("/chat")
     public ResponseEntity<?> chatWithBot(@RequestBody String userInput, HttpServletRequest request) {
-        String jwtToken = extractJwt(request);
+        String sessionId = extractSessionId(request);
 
-        if (bookingAIService.isBookingQuery(userInput)) {
-            String bookingResult = bookingAIService.handleBookingRequest(userInput, jwtToken);
+        if (bookingAIService.hasActiveBookingSession(sessionId)) {
+            String bookingResult = bookingAIService.handleBookingRequest(userInput, sessionId);
+            return ResponseEntity.ok(bookingResult);
+        } else if (bookingAIService.isBookingQuery(userInput)) {
+            String bookingResult = bookingAIService.handleBookingRequest(userInput, sessionId);
             return ResponseEntity.ok(bookingResult);
         } else if (aiService.isHotelQuery(userInput)) {
-            String hotelDetails = aiService.getHotelResponseFromAI(userInput, jwtToken);
-            return ResponseEntity.ok(hotelDetails);
+            String hotelDetails = aiService.getHotelResponseFromAI(userInput, sessionId);
+            return ResponseEntity.ok(hotelDetails + "<br>To <b>BOOK</b> any of these please type book followed by the hotel name");
         } else {
             return ResponseEntity.ok(openAiService.askOpenAi(userInput));
         }
     }
 
-    private String extractJwt(HttpServletRequest request) {
-        String authHeader = request.getHeader("Authorization");
-        return (authHeader != null && authHeader.startsWith("Bearer ")) ? authHeader.substring(7) : null;
-    }
 }
 
 
