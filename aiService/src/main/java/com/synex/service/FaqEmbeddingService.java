@@ -2,6 +2,8 @@ package com.synex.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -21,24 +23,33 @@ public class FaqEmbeddingService {
     public FaqEmbeddingService(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
+    
+    private final Map<String, String> faqMap = Map.of(
+            "do you allow pets", "Yes, we allow pets with a small fee.",
+            "what is the check-in time", "Check-in time is 2 PM.",
+            "do you have wifi", "Yes, we offer free Wi-Fi in all rooms."
+            // Add more FAQs
+        );
 
     public String getMatchingFaqAnswer(String userInput) {
-        List<Double> vector = getEmbedding(userInput);
-        if (vector.isEmpty()) return null;
+        LevenshteinDistance distance = new LevenshteinDistance();
+        String cleanedInput = userInput.trim().toLowerCase();
 
-        String vectorStr = "[" + vector.stream()
-            .map(String::valueOf)
-            .reduce((a, b) -> a + "," + b).orElse("") + "]";
+        int minDistance = Integer.MAX_VALUE;
+        String bestAnswer = null;
 
-        String sql = """
-            SELECT answer
-            FROM faq_vector
-            ORDER BY embedding <=> ?::vector ASC
-            LIMIT 1
-        """;
+        for (Map.Entry<String, String> entry : faqMap.entrySet()) {
+            String question = entry.getKey().toLowerCase();
+            int dist = distance.apply(cleanedInput, question);
 
-        List<String> result = jdbcTemplate.queryForList(sql, new Object[]{vectorStr}, String.class);
-        return result.isEmpty() ? null : result.get(0);
+            // You can tune the threshold below (e.g., 5 means very close match)
+            if (dist < 5 && dist < minDistance) {
+                minDistance = dist;
+                bestAnswer = entry.getValue();
+            }
+        }
+
+        return bestAnswer; // May return null if nothing matched closely
     }
 
     private List<Double> getEmbedding(String text) {

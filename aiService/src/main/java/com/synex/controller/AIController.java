@@ -32,20 +32,6 @@ public class AIController {
     @Autowired
     private FaqEmbeddingService faqEmbeddingService;
 
-//    @PostMapping("/chat")
-//    public ResponseEntity<?> chatWithBot(@RequestBody String userInput, HttpServletRequest request) {
-//        String jwtToken = extractJwt(request);
-//        
-//        if (bookingAIService.isBookingQuery(userInput)) {
-//            String bookingResult = bookingAIService.handleBookingRequest(userInput, jwtToken);
-//            return ResponseEntity.ok(bookingResult);
-//        } else if (aiService.isHotelQuery(userInput)) {
-//            String hotelDetails = aiService.getHotelResponseFromAI(userInput, jwtToken);
-//            return ResponseEntity.ok(hotelDetails + "<br>To <b>BOOK</b> any of these please type book followed by the hotel name");
-//        } else {
-//            return ResponseEntity.ok(openAiService.askOpenAi(userInput));
-//        }
-//    }
     private String extractSessionId(HttpServletRequest request) {
         String sessionId = request.getHeader("X-Session-Id");
         if (sessionId == null || sessionId.isEmpty()) {
@@ -59,6 +45,7 @@ public class AIController {
     @PostMapping("/chat")
     public ResponseEntity<?> chatWithBot(@RequestBody String userInput, HttpServletRequest request) {
         String sessionId = extractSessionId(request);
+        String faqAnswer = faqEmbeddingService.getMatchingFaqAnswer(userInput);
         
 
         if (bookingAIService.hasActiveBookingSession(sessionId)) {
@@ -70,16 +57,13 @@ public class AIController {
         } else if (aiService.isHotelQuery(userInput)) {
             String hotelDetails = aiService.getHotelResponseFromAI(userInput, sessionId);
             return ResponseEntity.ok(hotelDetails + "<br>To <b>BOOK</b> any of these please type book followed by the hotel name");
-        } else {
-            String faqAnswer = faqEmbeddingService.getMatchingFaqAnswer(userInput);
-            if (faqAnswer != null) {
+        } else if (faqAnswer != null) {
                 return ResponseEntity.ok(faqAnswer);
             } else {
                 return ResponseEntity.ok(openAiService.askOpenAi(userInput));
             }
         }
     }
-}
 
 
 
