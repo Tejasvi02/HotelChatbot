@@ -70,5 +70,4 @@ public class AIService {
                lower.contains("stay") || lower.contains("lodging") || lower.contains("hotels");
     }
     
-    
 }

@@ -1,5 +1,6 @@
 package com.synex.controller;
 
+import com.synex.service.FaqEmbeddingService;
 import com.synex.service.HotelEmbeddingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,6 +16,10 @@ public class HotelEmbeddingController {
 
     @Autowired
     private HotelEmbeddingService embeddingService;
+    
+
+    @Autowired
+    private FaqEmbeddingService faqEmbeddingService;
 
     // 1. Save vector for a hotel
     @PostMapping("/embed")
@@ -87,6 +92,28 @@ public class HotelEmbeddingController {
         return ResponseEntity.ok(Collections.singletonMap("hotel_id", topHotelId));
     }
 
+    @PostMapping("/faqembed")
+    public ResponseEntity<String> embedFaq(@RequestBody Map<String, String> payload) {
+        try {
+            String question = payload.get("question");
+            String answer = payload.get("answer");
+
+            if (question == null || question.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Missing 'question' in request body");
+            }
+            if (answer == null || answer.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Missing 'answer' in request body");
+            }
+
+            faqEmbeddingService.embedAndSaveFaq(question, answer);
+            return ResponseEntity.ok("FAQ vector saved.");
+        } catch (Exception e) {
+            System.out.println("Exception in embedFaq: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
+        }
+    }
+    
 
 
 }

@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.synex.service.AIService;
 import com.synex.service.BookingAIService;
+import com.synex.service.FaqEmbeddingService;
 import com.synex.service.OpenAiService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,7 +29,8 @@ public class AIController {
     @Autowired
     private BookingAIService bookingAIService;
     
-    public static List<String> questions;
+    @Autowired
+    private FaqEmbeddingService faqEmbeddingService;
 
 //    @PostMapping("/chat")
 //    public ResponseEntity<?> chatWithBot(@RequestBody String userInput, HttpServletRequest request) {
@@ -52,10 +54,12 @@ public class AIController {
         }
         return sessionId;
     }
+    
 
     @PostMapping("/chat")
     public ResponseEntity<?> chatWithBot(@RequestBody String userInput, HttpServletRequest request) {
         String sessionId = extractSessionId(request);
+        
 
         if (bookingAIService.hasActiveBookingSession(sessionId)) {
             String bookingResult = bookingAIService.handleBookingRequest(userInput, sessionId);
@@ -67,10 +71,15 @@ public class AIController {
             String hotelDetails = aiService.getHotelResponseFromAI(userInput, sessionId);
             return ResponseEntity.ok(hotelDetails + "<br>To <b>BOOK</b> any of these please type book followed by the hotel name");
         } else {
-            return ResponseEntity.ok(openAiService.askOpenAi(userInput));
+            String faqAnswer = faqEmbeddingService.getMatchingFaqAnswer(userInput);
+            if (faqAnswer != null) {
+                return ResponseEntity.ok(faqAnswer);
+            } else {
+                return ResponseEntity.ok(openAiService.askOpenAi(userInput));
+            }
         }
     }
-
 }
+
 
 
